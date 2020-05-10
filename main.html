@@ -1,0 +1,68 @@
+<html>
+  <head>
+    <style>
+      body {
+        font-family: "Helvetica Neue", "Calibri Light", Roboto, sans-serif;
+      }
+
+      #output {
+        background: #333;
+        height: 400px;
+        width: 80%;
+        color: #fff;
+        padding: 15px;
+        font-family: "monospace";
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+      }
+    </style>
+    <title></title>
+    <script>
+      const { ipcRenderer } = require("electron");
+      const { CUSTOM_IPC_EVENTS } = require("./ipcevents");
+
+      // Event listener for when the render process DOM load completes
+      document.addEventListener("DOMContentLoaded", function () {
+        
+        // div to append results to
+        const outputDiv = document.getElementById("output");
+
+        // set max to refer to later, use pingPong to decrement upon
+        // receiving a pong
+        const maxPingPongs = 5;
+        let pingPong = maxPingPongs;
+
+        // Kick things off and decrement
+        ipcRenderer.send(CUSTOM_IPC_EVENTS.PING, pingPong);
+        pingPong--;
+
+        // Listener for render process
+        ipcRenderer.on(CUSTOM_IPC_EVENTS.PONG, function receivePong() {
+          
+          // Add results to DOM
+          const text = `Render Process: received pong ${
+            maxPingPongs - pingPong
+          }`;
+          const content = document.createTextNode(text);
+          outputDiv.appendChild(content);
+          outputDiv.appendChild(document.createElement("br"));
+
+          // Check to see if there are still pings to send
+          if (pingPong > 0) {
+            
+            // Use setTimeout to show delay of ping / pong
+            setTimeout(function () {
+              
+              // send main process "PING" event with pingPong arg
+              ipcRenderer.send(CUSTOM_IPC_EVENTS.PING, pingPong);
+              pingPong--;
+            }, 1500);
+          }
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <h1>IPC Ping Pong</h1>
+    <div id="output"></div>
+  </body>
+</html>
